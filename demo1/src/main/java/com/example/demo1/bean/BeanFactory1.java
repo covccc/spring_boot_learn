@@ -1,6 +1,7 @@
 package com.example.demo1.bean;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
@@ -12,10 +13,14 @@ import org.springframework.context.annotation.AnnotationConfigUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.annotation.Resource;
+import java.util.Objects;
+
 /**
  * @author: huzw
  * @date: 2023/3/21
  */
+@Slf4j
 public class BeanFactory1 {
 
     /**
@@ -61,7 +66,12 @@ public class BeanFactory1 {
         beanFactory.getBeansOfType(BeanPostProcessor.class).values().forEach(System.out::println);
 
         //添加bean后置处理器
-        beanFactory.addBeanPostProcessors(beanFactory.getBeansOfType(BeanPostProcessor.class).values());
+        beanFactory.getBeansOfType(BeanPostProcessor.class).values().stream()
+                .sorted(Objects.requireNonNull(beanFactory.getDependencyComparator()))
+                .forEach(beanPostProcessor -> {
+                    log.info(">>>>> beanPostProcessorName:{},order:{}", beanPostProcessor,1);
+                    beanFactory.addBeanPostProcessor(beanPostProcessor);
+                });
 
         //获取bean工厂所有bean名字
         for (String beanDefinitionName : beanFactory.getBeanDefinitionNames()) {
@@ -73,13 +83,13 @@ public class BeanFactory1 {
 
         //获取深层次bean
         System.out.println("-------------深层次bean---------------");
-        System.out.println(beanFactory.getBean(Bean1.class).getBean2());
+        System.out.println(beanFactory.getBean(Bean1.class).getBean3());
         //System.out.println(beanFactory.getBean(Config.class));
 
     }
 }
 
-//这些类不能为内部类  不然会报错
+//这些类不能为内部类  不然会报错(或者为静态类)
 @Configuration
 class Config {
 
@@ -93,6 +103,16 @@ class Config {
         return new Bean2();
     }
 
+    @Bean
+    Bean3 bean3() {
+        return new Bean3();
+    }
+
+    @Bean
+    Bean4 bean4() {
+        return new Bean4();
+    }
+
 }
 
 @Data
@@ -101,8 +121,25 @@ class Bean1 {
     @Autowired
     private Bean2 bean2;
 
+    @Autowired
+    @Resource(name = "bean4")
+    private inner bean3;
+
 }
 
 class Bean2 {
 
 }
+
+interface inner {
+
+}
+
+class Bean3 implements inner {
+
+}
+
+class Bean4 implements inner {
+
+}
+
