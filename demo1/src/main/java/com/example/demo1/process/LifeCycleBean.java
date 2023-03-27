@@ -21,7 +21,7 @@ public class LifeCycleBean {
     }
 
     @Autowired
-    public void autowire(@Value("$JAVA_HOME") String home) {
+    public void autowire(@Value("${JAVA_HOME}") String home) {
         log.info("依赖注入：{}", home);
     }
 
